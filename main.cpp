@@ -1,6 +1,8 @@
 // compile with: g++ -g -o main main.cpp -lstdc++
 // run with ./main.exe
 
+#define _USE_MATH_DEFINES
+
 #include <cmath>
 #include <ctime>
 #include <iomanip>
@@ -12,6 +14,8 @@ tm getGMTTime();
 double GAST();
 double calculateJulianDate();
 //double LHA;
+double getAltitude(double latitudeRad, double declinationRad, double LHA);
+double getAzimuth(double latitudeRad, double declinationRad, double LHA);
 
 int main() {
     const double longitude = 32;
@@ -94,4 +98,34 @@ double LHA(double gast, double a, double longitudeDeg){
         return (gast - a) * 15 + longitudeDeg;
     }
     
+}
+
+/**
+ * Returns the altitude value of a star in radians.
+ *
+ * @param latitudeRad The latitude of the observer in radians.
+ * @param declinationRad The declination of the star in radians.
+ * @param LHA The local hour angle in radian.
+ * @return altitude in radians of the star within the range -pi to pi.
+ */
+double getAltitude(double latitudeRad, double declinationRad, double LHA) {
+    return asin(cos(LHA) * cos(declinationRad) * cos(latitudeRad) + sin(declinationRad) * sin(latitudeRad));
+}
+
+/**
+ * Returns the azimuth value of a star in radians.
+ *
+ * @param latitudeRad The latitude of the observer in radians.
+ * @param declinationRad The declination of the star in radians.
+ * @param LHA The local hour angle in radian.
+ * @return azimuth in radians of the star within the range 0 to 2 pi.
+ */
+double getAzimuth(double latitudeRad, double declinationRad, double LHA) {
+    double azimuth = atan2(-1 * sin(LHA),  tan(declinationRad) * cos(latitudeRad) - sin(latitudeRad) * cos(LHA));
+
+    if (azimuth < 0) {
+        azimuth += 2 * M_PI;
+    }
+
+    return azimuth;
 }
