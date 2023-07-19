@@ -1,35 +1,67 @@
-// compile with: g++ -g -o main main.cpp -lstdc++
+// compile with: make
 // run with ./main.exe
+
+#define _USE_MATH_DEFINES
 
 #include <cmath>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include "conversions.cpp"  
 
 using namespace std;
 
+double toRad(double deg);
+double toDeg(double rad);
+double fracHours(double hour, double minute, double second);
+
 tm getGMTTime();
-double GAST();
-double calculateJulianDate();
-//double LHA;
+double getJulianDate(tm gmt);
+double getGAST(double julianDate);
+double getLHA(double gast, double a, double longitudeDeg);
+double getAltitude(double latitudeRad, double declinationRad, double LHA);
+double getAzimuth(double latitudeRad, double declinationRad, double LHA);
 
 int main() {
+    // Inputs:
     const double longitude = 32;
     const double latitude = -117;
-    const double declination = 0.0;
-    const double rightAscension = 0.0;
+    const double rightAscension = fracHours(9, 35, 38.2);
+    const double declination = 19;
 
-    tm gmt = getGMTTime();
-    cout << "Current time at greenwich is:" << gmt.tm_year << " " << gmt.tm_mon << " " << gmt.tm_mday 
-    << " " << gmt.tm_hour << " " << gmt.tm_min << " " << gmt.tm_sec << endl;
+    // Calculations:
+    tm GMT = getGMTTime();
+    double julianDate = getJulianDate(GMT);
+    double GAST = getGAST(julianDate);
 
-    cout << "Current julian date is: " << calculateJulianDate() <<endl;
+    double LHA = getLHA(GAST, rightAscension, longitude);
 
-    //LHA(GAST(), rightAscension, longitude);
+    double altitude = toDeg(getAltitude(toRad(latitude), toRad(declination), toRad(LHA)));
+    double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA)));
+
+    // Results:
+    cout << "longitude: " << longitude << endl;
+    cout << "latitude: " <<  latitude << endl;
+    cout << "declination: " << declination << endl;
+    cout << "rightAscension: " << rightAscension << endl;
+    cout << "\n" << endl;
+    cout << "GMT:"  << GMT.tm_mon + 1 << "/" << GMT.tm_mday << "/" << GMT.tm_year + 1900 << " " << GMT.tm_hour << ":" << GMT.tm_min << ":" << GMT.tm_sec << endl;
+    cout << "julianDate: " << setprecision(15) << julianDate << endl;
+    cout << "GAST: " << setprecision(15) << GAST << endl;
+    cout << "LHA: " << setprecision(15) << LHA << endl;
+    cout << "\n" << endl;
+    cout << "altitude: " << setprecision(15) << altitude << endl;
+    cout << "azimuth: " << setprecision(15) << azimuth << endl;
 }
 
-double calculateJulianDate(){
-    tm gmt = getGMTTime();
+
+/**
+ * Returns the julian date based off of GMT.
+ *
+ * @param gmt The Greenwich Mean Time to convert into a julian date.
+ * @return the julian date in number of days.
+ */
+double getJulianDate(tm gmt) {
     int year = gmt.tm_year + 1900;
     int month = gmt.tm_mon + 1;
     int day = gmt.tm_mday;
@@ -48,7 +80,13 @@ double calculateJulianDate(){
     return c+day+e+f-1524.5+fractionalDay;
 }
 
-double GAST(double julianDate) {
+/**
+ * Returns the Greenwich Apparent Sidereal Time based off of a julian date.
+ *
+ * @param julianDate The UT1 julian date.
+ * @return gast in degrees. // TODO: idk if it returns in degrees
+ */
+double getGAST(double julianDate) {
     double JD_UT = julianDate;
     double JD_TT = JD_UT; // approximation, can be off by ~0.001
     double JD_0 = floor(JD_UT);
@@ -76,6 +114,11 @@ double GAST(double julianDate) {
     return GMST + eqeq;
 }
 
+/**
+ * Returns the current Greenwich Mean Time (GMT).
+ *
+ * @return current GMT time.
+ */
 tm getGMTTime(){    
     time_t now = time(nullptr);
     tm *gmtTime = gmtime(&now);
@@ -83,7 +126,15 @@ tm getGMTTime(){
     return *gmtTime;
 }
 
-double LHA(double gast, double a, double longitudeDeg){
+/**
+ * Returns the local hour angle (LHA) in degrees.
+ *
+ * @param gast The Greenwich Apparent Sidereal Time in hours.
+ * @param a The right ascension of the star in hours.
+ * @param longitudeDeg The longitude of the observer in degrees.
+ * @return LHA in degrees.
+ */
+double getLHA(double gast, double a, double longitudeDeg) {
     if(getGMTTime().tm_hour > 12) { 
         // you are west of greenwich
         return (gast - a) * 15 - longitudeDeg;
@@ -92,4 +143,34 @@ double LHA(double gast, double a, double longitudeDeg){
         return (gast - a) * 15 + longitudeDeg;
     }
     
+}
+
+/**
+ * Returns the altitude value of a star in radians.
+ *
+ * @param latitudeRad The latitude of the observer in radians.
+ * @param declinationRad The declination of the star in radians.
+ * @param LHA The local hour angle in radians.
+ * @return altitude in radians of the star within the range -pi to pi.
+ */
+double getAltitude(double latitudeRad, double declinationRad, double LHA) {
+    return asin(cos(LHA) * cos(declinationRad) * cos(latitudeRad) + sin(declinationRad) * sin(latitudeRad));
+}
+
+/**
+ * Returns the azimuth value of a star in radians.
+ *
+ * @param latitudeRad The latitude of the observer in radians.
+ * @param declinationRad The declination of the star in radians.
+ * @param LHA The local hour angle in radians.
+ * @return azimuth in radians of the star within the range 0 to 2 pi.
+ */
+double getAzimuth(double latitudeRad, double declinationRad, double LHA) {
+    double azimuth = atan2(-1 * sin(LHA),  tan(declinationRad) * cos(latitudeRad) - sin(latitudeRad) * cos(LHA));
+
+    if (azimuth < 0) {
+        azimuth += 2 * M_PI;
+    }
+
+    return azimuth;
 }
