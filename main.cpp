@@ -74,21 +74,19 @@ double getJulianDate(tm gmt) {
     int year = gmt.tm_year + 1900;
     int month = gmt.tm_mon + 1;
     int day = gmt.tm_mday;
-    int hour = gmt.tm_hour;
-    int minute = gmt.tm_min;
-    int second = gmt.tm_sec;
+    double hour = gmt.tm_hour;
+    double minute = gmt.tm_min;
+    double second = gmt.tm_sec;
 
+    double a = (double)year/100;
+    double b = a/4;
+    double c = 2-a+b;
+    double e = 365.25*((double)year+4716);
+    double f = 30.6001*((double)month+1);
 
-    int a = (14-month)/12;
-    int y = year + 4800 - a;
-    int m = month +12 * a - 3;
+    double fractionalDay = (double)hour / 24.0 + (double)minute / (24.0 * 60.0) + (double)second / (24.0 * 60.0 * 60.0);
 
-    int jdn = day + (153* m +2) / 5 + 365 * y + y /4-y/100+y/400-32045;
-    
-    double fractionOfDay = (hour - 12) / 24.0 + minute / 1440.0 + second / 86400.0;
-    
-    double julianDate = jdn + fractionOfDay;
-    return julianDate;
+    return c+day+e+f-1524.5+fractionalDay;
 }
 
 /**
