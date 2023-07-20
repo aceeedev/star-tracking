@@ -7,7 +7,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include "conversions.cpp"  
+#include "util.cpp"  
 
 using namespace std;
 
@@ -20,24 +20,33 @@ double getJulianDate(tm gmt);
 double getGAST(double julianDate);
 double getLHA(double gast, double a, double longitudeDeg);
 double getAltitude(double latitudeRad, double declinationRad, double LHA);
-double getAzimuth(double latitudeRad, double declinationRad, double LHA);
+double getAzimuth(double latitudeRad, double declinationRad, double LHA, double altitudeRad);
 
-int main() {
+int main(int argc, char *argv[]) {
     // Inputs:
-    const double longitude = 32;
-    const double latitude = -117;
-    const double rightAscension = fracHours(9, 35, 38.2);
-    const double declination = 19;
+    double longitude = 32;
+    double latitude = -117;
+    double rightAscension = fracHours(9, 35, 38.2);
+    double declination = 19;
+
+    tm GMT = getGMTTime();
+
+    if (argc == 10) {
+        longitude = stod(argv[1]);
+        latitude = stod(argv[2]);
+        rightAscension = stod(argv[3]);
+        declination = stod(argv[4]);
+        GMT = createTM(stoi(argv[5]), stoi(argv[6]), stoi(argv[7]), stoi(argv[8]), stoi(argv[9]), stoi(argv[10]));
+    }
 
     // Calculations:
-    tm GMT = getGMTTime();
     double julianDate = getJulianDate(GMT);
     double GAST = getGAST(julianDate);
 
     double LHA = getLHA(GAST, rightAscension, longitude);
 
     double altitude = toDeg(getAltitude(toRad(latitude), toRad(declination), toRad(LHA)));
-    double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA)));
+    double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA), toRad(altitude)));
 
     // Results:
     cout << "longitude: " << longitude << endl;
@@ -45,7 +54,7 @@ int main() {
     cout << "declination: " << declination << endl;
     cout << "rightAscension: " << rightAscension << endl;
     cout << "\n" << endl;
-    cout << "GMT:"  << GMT.tm_mon + 1 << "/" << GMT.tm_mday << "/" << GMT.tm_year + 1900 << " " << GMT.tm_hour << ":" << GMT.tm_min << ":" << GMT.tm_sec << endl;
+    cout << "GMT: "  << GMT.tm_mon + 1 << "/" << GMT.tm_mday << "/" << GMT.tm_year + 1900 << " " << GMT.tm_hour << ":" << GMT.tm_min << ":" << GMT.tm_sec << endl;
     cout << "julianDate: " << setprecision(15) << julianDate << endl;
     cout << "GAST: " << setprecision(15) << GAST << endl;
     cout << "LHA: " << setprecision(15) << LHA << endl;
@@ -86,7 +95,7 @@ double getJulianDate(tm gmt) {
  * Returns the Greenwich Apparent Sidereal Time based off of a julian date.
  *
  * @param julianDate The UT1 julian date.
- * @return gast in degrees. // TODO: idk if it returns in degrees
+ * @return gast in degrees.
  */
 double getGAST(double julianDate) {
     double JD_UT = julianDate;
@@ -167,12 +176,12 @@ double getAltitude(double latitudeRad, double declinationRad, double LHA) {
  * @param LHA The local hour angle in radians.
  * @return azimuth in radians of the star within the range 0 to 2 pi.
  */
-double getAzimuth(double latitudeRad, double declinationRad, double LHA) {
-    double azimuth = atan2(-1 * sin(LHA),  tan(declinationRad) * cos(latitudeRad) - sin(latitudeRad) * cos(LHA));
-
-    if (azimuth < 0) {
-        azimuth += 2 * M_PI;
+double getAzimuth(double latitudeRad, double declinationRad, double LHA, double altitudeRad) {
+    double azimuthRad = atan2(-1 * sin(LHA),  tan(declinationRad) * cos(latitudeRad) - sin(latitudeRad) * cos(LHA));
+    
+    if (azimuthRad < 0) {
+        azimuthRad += (2 * M_PI);
     }
 
-    return azimuth;
+    return azimuthRad;
 }
