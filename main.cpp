@@ -24,10 +24,10 @@ double getAzimuth(double latitudeRad, double declinationRad, double LHA, double 
 
 int main(int argc, char *argv[]) {
     // Inputs:
-    double longitude = 32;
-    double latitude = -117;
-    double rightAscension = fracHours(9, 35, 38.2);
-    double declination = 19;
+    double latitude = 32;
+    double longitude = -117;
+    double rightAscension = fracHours(11, 59, 25);
+    double declination = fracDegrees(1, 54, 30);
 
     tm GMT = getGMTTime();
 
@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
         latitude = stod(argv[2]);
         rightAscension = stod(argv[3]);
         declination = stod(argv[4]);
-        GMT = createTM(stoi(argv[5]), stoi(argv[6]), stoi(argv[7]), stoi(argv[8]), stoi(argv[9]), stoi(argv[10]));
     }
 
     // Calculations:
@@ -49,8 +48,8 @@ int main(int argc, char *argv[]) {
     double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA), toRad(altitude)));
 
     // Results:
-    cout << "longitude: " << longitude << endl;
     cout << "latitude: " <<  latitude << endl;
+    cout << "longitude: " << longitude << endl;
     cout << "declination: " << declination << endl;
     cout << "rightAscension: " << rightAscension << endl;
     cout << "\n" << endl;
@@ -74,26 +73,28 @@ double getJulianDate(tm gmt) {
     int year = gmt.tm_year + 1900;
     int month = gmt.tm_mon + 1;
     int day = gmt.tm_mday;
-    double hour = gmt.tm_hour;
-    double minute = gmt.tm_min;
-    double second = gmt.tm_sec;
+    int hour = gmt.tm_hour;
+    int minute = gmt.tm_min;
+    int second = gmt.tm_sec;
 
-    double a = (double)year/100;
-    double b = a/4;
-    double c = 2-a+b;
-    double e = 365.25*((double)year+4716);
-    double f = 30.6001*((double)month+1);
 
-    double fractionalDay = (double)hour / 24.0 + (double)minute / (24.0 * 60.0) + (double)second / (24.0 * 60.0 * 60.0);
+    int a = (14-month)/12;
+    int y = year + 4800 - a;
+    int m = month +12 * a - 3;
 
-    return c+day+e+f-1524.5+fractionalDay;
+    int jdn = day + (153* m +2) / 5 + 365 * y + y /4-y/100+y/400-32045;
+    
+    double fractionOfDay = (hour-12) / 24.0 + minute / 1440.0 + second / 86400.0;
+    
+    double julianDate = jdn + fractionOfDay;
+    return julianDate;
 }
 
 /**
  * Returns the Greenwich Apparent Sidereal Time based off of a julian date.
  *
  * @param julianDate The UT1 julian date.
- * @return gast in degrees.
+ * @return gast in hours.
  */
 double getGAST(double julianDate) {
     double JD_UT = julianDate;
@@ -104,20 +105,20 @@ double getGAST(double julianDate) {
     } else {
         JD_0 -= 0.5;
     }
-    double H = (JD_UT - JD_0) * 24;
+    double H = (JD_UT - JD_0) * 24.0;
 
     double julianDateJ2000 = 2451545.0;
     double D_TT = JD_TT - julianDateJ2000;
     double D_UT = JD_UT - julianDateJ2000;
     double T = D_TT / 36525.0;
 
-    double GMST = fmod(6.697375 + 0.065707485828 * D_UT + 1.0027379 * H + 0.0854103 * T + 0.0000258 * (T * T), 24);
+    double GMST = fmod(6.697375 + (0.065707485828 * D_UT) + (1.0027379 * H) + (0.0854103 * T) + (0.0000258 * T * T), 24);
 
-    double omega = 125.04 - 0.052954 * D_TT;
-    double L = 280.47 + 0.98565 * D_TT;
-    double obliquity = 23.4393 - 0.0000004 * D_TT;
+    double omega = 125.04 - (0.052954 * D_TT);
+    double L = 280.47 + (0.98565 * D_TT);
+    double obliquity = 23.4393 - (0.0000004 * D_TT);
 
-    double nutation = -0.000319 * sin(omega) - 0.000024 * sin(2 * L);
+    double nutation = (-0.000319 * sin(omega)) - (0.000024 * sin(2 * L));
     double eqeq = nutation * cos(obliquity);
 
     return GMST + eqeq;
@@ -144,14 +145,14 @@ tm getGMTTime(){
  * @return LHA in degrees.
  */
 double getLHA(double gast, double a, double longitudeDeg) {
-    if(getGMTTime().tm_hour > 12) { 
+    /*if(getGMTTime().tm_hour > 12) { 
         // you are west of greenwich
         return (gast - a) * 15 - longitudeDeg;
     } else {
         // you are east of greenwich
         return (gast - a) * 15 + longitudeDeg;
-    }
-    
+    }*/
+    return ((gast - a) * 15) + longitudeDeg;
 }
 
 /**

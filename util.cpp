@@ -42,6 +42,18 @@ double fracHours(double hour, double minute, double second) {
 }
 
 /**
+ * Returns the fractional degree by converting arcminutes and arcseconds into degrees.
+ *
+ * @param degree The hour from 0 to 23.
+ * @param arcminute The minute from 0 to 59.
+ * @param arcsecond The second from 0 to 59.
+ * @return number of hours as a fractional number.
+ */
+double fracDegrees(double hour, double arcminute, double arcsecond) {
+    return hour + (arcminute / 60.0) + (arcsecond / 3600.0);
+}
+
+/**
  * Returns a tm based off of the parameters.
  *
  * @param year The year.
