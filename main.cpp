@@ -17,44 +17,49 @@ double fracHours(double hour, double minute, double second);
 
 tm getGMTTime();
 double getJulianDate(tm gmt);
-double getGAST(double julianDate);
+double getGAST(double julianDateUT, double julianDateTT);
 double getLHA(double gast, double a, double longitudeDeg);
 double getAltitude(double latitudeRad, double declinationRad, double LHA);
-double getAzimuth(double latitudeRad, double declinationRad, double LHA, double altitudeRad);
+double getAzimuth(double latitudeRad, double declinationRad, double LHA);
 
 int main(int argc, char *argv[]) {
     // Inputs:
     double latitude = 32;
     double longitude = -117;
-    double rightAscension = fracHours(11, 59, 25);
-    double declination = fracDegrees(1, 54, 30);
+    double rightAscension = fracHours(9, 56, 27.4);
+    double declination = fracDegrees(8, 34, 13);
 
     tm GMT = getGMTTime();
+    tm local = GMT;
+    local.tm_hour -= 7;
 
-    if (argc == 10) {
-        longitude = stod(argv[1]);
-        latitude = stod(argv[2]);
+    if (argc == 5) {
+        latitude = stod(argv[1]);
+        longitude = stod(argv[2]);
         rightAscension = stod(argv[3]);
         declination = stod(argv[4]);
     }
 
     // Calculations:
-    double julianDate = getJulianDate(GMT);
-    double GAST = getGAST(julianDate);
+    double julianDateUT = getJulianDate(GMT);
+    double julianDateTT = getJulianDate(local);
+    double GAST = getGAST(julianDateUT, julianDateTT);
 
     double LHA = getLHA(GAST, rightAscension, longitude);
 
     double altitude = toDeg(getAltitude(toRad(latitude), toRad(declination), toRad(LHA)));
-    double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA), toRad(altitude)));
+    double azimuth = toDeg(getAzimuth(toRad(latitude), toRad(declination), toRad(LHA)));
 
     // Results:
     cout << "latitude: " <<  latitude << endl;
     cout << "longitude: " << longitude << endl;
-    cout << "declination: " << declination << endl;
     cout << "rightAscension: " << rightAscension << endl;
+    cout << "declination: " << declination << endl;
     cout << "\n" << endl;
     cout << "GMT: "  << GMT.tm_mon + 1 << "/" << GMT.tm_mday << "/" << GMT.tm_year + 1900 << " " << GMT.tm_hour << ":" << GMT.tm_min << ":" << GMT.tm_sec << endl;
-    cout << "julianDate: " << setprecision(15) << julianDate << endl;
+    cout << "local: "  << local.tm_mon + 1 << "/" << local.tm_mday << "/" << local.tm_year + 1900 << " " << local.tm_hour << ":" << local.tm_min << ":" << local.tm_sec << endl;
+    cout << "julianDateUT: " << setprecision(15) << julianDateUT << endl;
+    cout << "julianDateTT: " << setprecision(15) << julianDateTT << endl;
     cout << "GAST: " << setprecision(15) << GAST << endl;
     cout << "LHA: " << setprecision(15) << LHA << endl;
     cout << "\n" << endl;
@@ -96,9 +101,9 @@ double getJulianDate(tm gmt) {
  * @param julianDate The UT1 julian date.
  * @return gast in hours.
  */
-double getGAST(double julianDate) {
-    double JD_UT = julianDate;
-    double JD_TT = JD_UT; // approximation, can be off by ~0.001
+double getGAST(double julianDateUT, double julianDateTT) {
+    double JD_UT = julianDateUT;
+    double JD_TT = julianDateTT; // approximation, can be off by ~0.001
     double JD_0 = floor(JD_UT);
     if (JD_UT - JD_0 > 0.5) {
         JD_0 += 0.5;
@@ -145,13 +150,6 @@ tm getGMTTime(){
  * @return LHA in degrees.
  */
 double getLHA(double gast, double a, double longitudeDeg) {
-    /*if(getGMTTime().tm_hour > 12) { 
-        // you are west of greenwich
-        return (gast - a) * 15 - longitudeDeg;
-    } else {
-        // you are east of greenwich
-        return (gast - a) * 15 + longitudeDeg;
-    }*/
     return ((gast - a) * 15) + longitudeDeg;
 }
 
@@ -175,7 +173,7 @@ double getAltitude(double latitudeRad, double declinationRad, double LHA) {
  * @param LHA The local hour angle in radians.
  * @return azimuth in radians of the star within the range 0 to 2 pi.
  */
-double getAzimuth(double latitudeRad, double declinationRad, double LHA, double altitudeRad) {
+double getAzimuth(double latitudeRad, double declinationRad, double LHA) {
     double azimuthRad = atan2(-1 * sin(LHA),  tan(declinationRad) * cos(latitudeRad) - sin(latitudeRad) * cos(LHA));
     
     if (azimuthRad < 0) {
