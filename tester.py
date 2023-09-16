@@ -2,7 +2,6 @@ import subprocess
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
-from requests_html import HTMLSession
 
 # Util Functions:
 def subtractAndRound(num1, num2, digits=3):
@@ -105,7 +104,7 @@ def planetsTest(latitude, longitude):
 
     # test each planet
     for key, value in planet_data.items():
-        print(f"Running test for {key}: {value['ra']} {value['dec']}")
+        print(f"Running test for {key}:")
         results = runMainScript(latitude, longitude, value['ra'], value['dec'])
 
         planet_data[key]['calculated_altitude'] = results['altitude']

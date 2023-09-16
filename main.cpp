@@ -11,10 +11,6 @@
 
 using namespace std;
 
-double toRad(double deg);
-double toDeg(double rad);
-double fracHours(double hour, double minute, double second);
-
 tm getGMTTime();
 double getJulianDate(tm gmt);
 double getGAST(double julianDateUT, double julianDateTT);
